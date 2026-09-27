@@ -4,9 +4,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import Card from '../components/Card.jsx';
 import Button from '../components/Button.jsx';
 import Input from '../components/Input.jsx';
-import PriorityBadge from '../components/PriorityBadge.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
-import Badge from '../components/Badge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import LoadingState from '../components/LoadingState.jsx';
 import { getCaseByIdApi, getCasesApi } from '../services/api.js';
@@ -16,10 +14,8 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
-  AlertCircle,
-  ShieldAlert,
-  ArrowRight,
-  ExternalLink
+  HelpCircle,
+  ArrowRight
 } from 'lucide-react';
 
 const STATUS_STAGES = [
@@ -32,7 +28,8 @@ const STATUS_STAGES = [
 ];
 
 /**
- * CareRoute Student Case Status View
+ * CareRoute Student Case Status View ("My Request")
+ * Calm, transparent progress tracking for the student.
  */
 export default function CaseStatus() {
   const { id } = useParams();
@@ -45,7 +42,6 @@ export default function CaseStatus() {
   const [availableCases, setAvailableCases] = useState([]);
 
   useEffect(() => {
-    // Load list of cases for quick lookup dropdown / demo selector
     getCasesApi().then((data) => {
       if (data && data.cases) {
         setAvailableCases(data.cases);
@@ -69,7 +65,7 @@ export default function CaseStatus() {
       setSearchId(caseId);
     } catch (err) {
       console.warn('Could not find case:', err);
-      setError(`Case "${caseId}" was not found. Please verify your reference number.`);
+      setError(`Case reference "${caseId}" was not found. Please check your reference code.`);
       setCurrentCase(null);
     } finally {
       setLoading(false);
@@ -83,7 +79,6 @@ export default function CaseStatus() {
     }
   };
 
-  // Determine which step in the 6-stage lifecycle the case has reached
   const getStageIndex = (statusStr) => {
     const s = (statusStr || '').toLowerCase();
     if (s.includes('resolved')) return 5;
@@ -91,56 +86,52 @@ export default function CaseStatus() {
     if (s.includes('reviewing') || s.includes('in progress') || s.includes('acknowledged')) return 3;
     if (s.includes('routed')) return 2;
     if (s.includes('triaged')) return 1;
-    return 0; // Submitted
+    return 0;
   };
 
   const currentStageIndex = currentCase ? getStageIndex(currentCase.status) : 0;
   const categoryInfo = currentCase ? getCategoryById(currentCase.category) : null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <PageHeader
-        title="Student Case Status"
-        subtitle="Track your support request progress, view assigned university services, and review communication notes."
-        action={
-          <Link to="/triage">
-            <Button variant="outline" size="sm">
-              Submit New Request
-            </Button>
-          </Link>
-        }
-      />
+    <div className="max-w-3xl mx-auto px-4 py-12 space-y-8">
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Track Your Request
+        </h1>
+        <p className="text-sm text-slate-600 max-w-md mx-auto">
+          Check live updates and messages regarding your support case.
+        </p>
+      </div>
 
-      {/* Case ID Search & Quick Picker Bar */}
-      <Card padding="tight" className="bg-slate-50/80 border-slate-200">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto flex-1">
+      {/* Case Lookup Bar */}
+      <Card padding="tight" className="bg-white border-slate-200">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <form onSubmit={handleSearch} className="flex items-center gap-2 w-full flex-1">
             <Input
               id="case-search"
-              placeholder="Search by Case ID (e.g. CR-1002)"
+              placeholder="Enter Case Reference (e.g. CR-1002)"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
               leftIcon={<Search className="w-4 h-4 text-slate-400" />}
-              className="max-w-md"
             />
             <Button type="submit" variant="primary" size="md">
-              Lookup
+              Find
             </Button>
           </form>
 
-          {/* Quick Demo Case Switcher */}
+          {/* Discreet case switcher for demonstration */}
           {availableCases.length > 0 && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs text-slate-500 font-medium shrink-0">Demo switcher:</span>
+            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto text-xs text-slate-400">
+              <span>Sample:</span>
               <select
                 aria-label="Select demo case"
                 value={currentCase?.id || ''}
                 onChange={(e) => navigate(`/status/${e.target.value}`)}
-                className="text-xs bg-white border border-slate-300 rounded-lg p-1.5 text-slate-700 font-mono"
+                className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-1 text-slate-600 font-mono"
               >
                 {availableCases.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.id} — {c.category} ({c.priority})
+                    {c.id}
                   </option>
                 ))}
               </select>
@@ -152,7 +143,7 @@ export default function CaseStatus() {
       {/* Loading & Error States */}
       {loading && (
         <Card padding="spacious">
-          <LoadingState message="Fetching case information..." subtext="Checking routing timeline" />
+          <LoadingState message="Checking request status..." />
         </Card>
       )}
 
@@ -162,119 +153,65 @@ export default function CaseStatus() {
           description={error}
           action={
             <Button variant="secondary" onClick={() => loadCase('CR-1002')}>
-              Load Sample Case CR-1002
+              View Sample Request
             </Button>
           }
         />
       )}
 
-      {/* Case Details View */}
+      {/* Case Overview */}
       {currentCase && !loading && (
         <div className="space-y-6">
-          {/* Main Case Header Card */}
-          <Card
-            variant={currentCase.escalationRequired || currentCase.priority === 'critical' ? 'crisis' : 'default'}
-            padding="spacious"
-          >
+          <Card padding="spacious" className="shadow-card border-slate-200/80">
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-3">
                 <div>
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-mono font-extrabold text-slate-900 tracking-tight">
-                      {currentCase.id}
-                    </h2>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-600">
-                      {currentCase.studentIdentifier}
-                    </span>
-                    {currentCase.escalationRequired && (
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 bg-rose-100 px-2.5 py-1 rounded-md">
-                        <ShieldAlert className="w-3.5 h-3.5" />
-                        Escalated Case
-                      </span>
-                    )}
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">
+                    Case Reference
+                  </span>
+                  <div className="text-xl font-mono font-bold text-slate-900 mt-0.5">
+                    {currentCase.id}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Submitted on {new Date(currentCase.createdAt).toLocaleDateString(undefined, {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <PriorityBadge priority={currentCase.priority} size="md" />
+                <div>
                   <StatusBadge status={currentCase.status} size="md" />
                 </div>
               </div>
 
-              {/* Grid Attributes */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Grid Information */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    Concern Category
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                    Support Category
                   </span>
                   <div className="text-sm font-bold text-slate-900">
                     {categoryInfo ? categoryInfo.name : currentCase.category}
                   </div>
-                  {currentCase.secondaryCategory && (
-                    <span className="text-[11px] text-slate-500 block mt-0.5">
-                      Secondary: {currentCase.secondaryCategory}
-                    </span>
-                  )}
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 sm:col-span-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    Assigned University Service
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                    Assigned Campus Service
                   </span>
                   <div className="text-sm font-bold text-brand-700">
                     {currentCase.assignedService}
                   </div>
-                  <span className="text-[11px] text-slate-500 block mt-0.5">
-                    Handling department responsible for review and appointment
-                  </span>
                 </div>
               </div>
-
-              {/* Case Summary */}
-              <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                  Triage Summary & Notes
-                </span>
-                <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                  {currentCase.summary}
-                </p>
-              </div>
-
-              {/* Student Message Preview (Confidential) */}
-              {currentCase.studentMessage && (
-                <div className="p-4 rounded-xl bg-white border border-slate-200 text-xs">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    Your Submitted Description (Encrypted / Anonymized)
-                  </span>
-                  <p className="text-slate-600 italic">
-                    "{currentCase.studentMessage}"
-                  </p>
-                </div>
-              )}
             </div>
           </Card>
 
-          {/* Stepped Status Timeline */}
-          <Card padding="spacious">
-            <h3 className="text-lg font-bold text-slate-900 mb-6">
-              Case Routing & Resolution Timeline
-            </h3>
+          {/* Visual Progress Timeline */}
+          <Card padding="spacious" className="shadow-card border-slate-200/80">
+            <h2 className="text-base font-bold text-slate-900 mb-6">
+              Progress Timeline
+            </h2>
 
-            {/* Visual Stepper */}
-            <div className="mb-10">
+            {/* Stepper */}
+            <div className="mb-8">
               <div className="hidden md:flex items-center justify-between relative">
-                {/* Background Line */}
-                <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 -z-0"></div>
+                <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-100 -z-0"></div>
                 <div
                   className="absolute top-4 left-6 h-0.5 bg-brand-600 -z-0 transition-all duration-500"
                   style={{ width: `${(currentStageIndex / (STATUS_STAGES.length - 1)) * 100}%` }}
@@ -285,28 +222,28 @@ export default function CaseStatus() {
                   const isCurrent = idx === currentStageIndex;
 
                   return (
-                    <div key={stage} className="flex flex-col items-center relative z-10 w-28 text-center">
+                    <div key={stage} className="flex flex-col items-center relative z-10 w-24 text-center">
                       <div
-                        className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs transition-smooth ${
+                        className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-xs transition-smooth ${
                           isCurrent
-                            ? 'bg-brand-600 text-white ring-4 ring-brand-100 shadow-sm'
+                            ? 'bg-brand-600 text-white ring-4 ring-brand-100'
                             : isCompleted
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-white border-2 border-slate-300 text-slate-400'
+                            : 'bg-white border-2 border-slate-200 text-slate-400'
                         }`}
                       >
                         {isCompleted && !isCurrent ? (
-                          <CheckCircle2 className="w-4 h-4" />
+                          <CheckCircle2 className="w-3.5 h-3.5" />
                         ) : (
                           idx + 1
                         )}
                       </div>
                       <span
-                        className={`text-xs font-semibold mt-2.5 leading-tight ${
+                        className={`text-[11px] font-medium mt-2 leading-tight ${
                           isCurrent
-                            ? 'text-brand-700'
+                            ? 'text-brand-700 font-semibold'
                             : isCompleted
-                            ? 'text-slate-800'
+                            ? 'text-slate-700'
                             : 'text-slate-400'
                         }`}
                       >
@@ -317,39 +254,37 @@ export default function CaseStatus() {
                 })}
               </div>
 
-              {/* Mobile Stepper Notice */}
-              <div className="md:hidden flex items-center gap-2 p-3 rounded-lg bg-brand-50 border border-brand-200">
-                <Clock className="w-4 h-4 text-brand-600" />
-                <span className="text-xs font-semibold text-brand-900">
-                  Current Stage {currentStageIndex + 1} of {STATUS_STAGES.length}: {STATUS_STAGES[currentStageIndex]}
+              {/* Mobile Stepper */}
+              <div className="md:hidden flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                <Clock className="w-4 h-4 text-brand-600 shrink-0" />
+                <span className="text-slate-700">
+                  Current Stage: <strong className="text-slate-900">{STATUS_STAGES[currentStageIndex]}</strong>
                 </span>
               </div>
             </div>
 
-            {/* Chronological Event History */}
-            <div className="space-y-4 pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Activity Log
-              </h4>
+            {/* Updates Log */}
+            <div className="pt-4 border-t border-slate-100 space-y-4">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
+                Updates Log
+              </span>
 
-              <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+              <div className="relative pl-6 space-y-5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                 {currentCase.timeline && currentCase.timeline.map((event, idx) => (
                   <div key={idx} className="relative">
-                    <div className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-brand-600 ring-4 ring-white"></div>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
-                      <span className="font-bold text-slate-900 text-sm">
+                    <div className="absolute -left-6 top-1 h-2 w-2 rounded-full bg-brand-600 ring-4 ring-white"></div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-900">
                         {event.status}
                       </span>
                       <span className="text-slate-400">
-                        {new Date(event.timestamp).toLocaleString(undefined, {
+                        {new Date(event.timestamp).toLocaleDateString(undefined, {
                           month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
+                          day: 'numeric'
                         })}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
                       {event.note}
                     </p>
                   </div>

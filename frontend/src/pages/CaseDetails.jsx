@@ -163,7 +163,7 @@ export default function CaseDetails() {
                 Escalated Safeguarding / Safety File
               </h3>
               <p className="text-xs text-rose-900 mt-0.5 leading-relaxed">
-                This case has triggered high-risk signals during triage. Standard SLA waived. Rapid human verification protocol active. If immediate physical jeopardy is identified, escalate to campus security ({EMERGENCY_PLACEHOLDERS.CAMPUS_SECURITY_CONTACT}).
+                This case has triggered high-risk signals during triage. Standard SLA waived. Rapid human verification protocol active. If immediate physical jeopardy is identified, escalate to {EMERGENCY_PLACEHOLDERS.CAMPUS_SECURITY_NAME}.
               </p>
             </div>
           </div>

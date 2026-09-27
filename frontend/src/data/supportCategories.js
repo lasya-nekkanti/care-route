@@ -160,10 +160,12 @@ export const SUPPORT_CATEGORIES = [
 ];
 
 export const EMERGENCY_PLACEHOLDERS = {
-  EMERGENCY_SUPPORT_NUMBER: "999 / 911 / 112 (Placeholder)",
-  CRISIS_COUNSELLOR_CONTACT: "Campus 24/7 Mental Health Crisis Line: 0800-CARE-NOW (Placeholder)",
-  CAMPUS_SECURITY_CONTACT: "Campus Security Emergency Dispatch: 020-5555-0199 (Placeholder)",
-  DISCLAIMER: "CareRoute is a triage and routing tool, not an emergency dispatch system or clinical diagnosis provider. If you or someone you know is in immediate danger, please dial local emergency services immediately."
+  // NOTE: Configurable in university deployment. Do not hardcode fictitious phone numbers.
+  EMERGENCY_SUPPORT_NAME: "Local emergency services",
+  CRISIS_COUNSELLOR_NAME: "Campus crisis support team",
+  CAMPUS_SECURITY_NAME: "Campus safety & first response",
+  SUPPORT_CALLBACK_NAME: "On-duty student support team",
+  DISCLAIMER: "CareRoute is an initial navigation and support router. If you are in immediate physical danger, please contact your local emergency service or someone you trust who can stay with you."
 };
 
 export const getCategoryById = (id) => {

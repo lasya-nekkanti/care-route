@@ -1,38 +1,35 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import PageHeader from '../components/PageHeader.jsx';
-import Card, { CardBody, CardFooter, CardHeader } from '../components/Card.jsx';
+import Card from '../components/Card.jsx';
 import Button from '../components/Button.jsx';
-import PriorityBadge from '../components/PriorityBadge.jsx';
-import Badge from '../components/Badge.jsx';
 import Alert from '../components/Alert.jsx';
 import { getCategoryById, EMERGENCY_PLACEHOLDERS } from '../data/supportCategories.js';
 import { DEFAULT_MOCK_ASSESSMENT } from '../data/mockAssessment.js';
 import { createCaseApi } from '../services/api.js';
 import {
-  ShieldAlert,
   ArrowRight,
-  Sparkles,
-  PhoneCall,
-  CheckCircle,
-  HelpCircle,
-  Clock,
   ArrowLeft,
-  LifeBuoy
+  HeartHandshake,
+  PhoneCall,
+  UserCheck,
+  Shield,
+  Clock,
+  Sparkles
 } from 'lucide-react';
 
 /**
- * CareRoute Assessment Result Page
+ * CareRoute Assessment Page
+ * Human, reassuring, and calm. No technical triage jargon.
  */
 export default function Assessment() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Retrieve assessment from location.state or fallback to default mock assessment
+  // Retrieve assessment from location.state or fallback
   const assessment = location.state?.assessment || DEFAULT_MOCK_ASSESSMENT;
   const studentInput = location.state?.studentInput || {
     message: "Student reported general concerns requiring guidance.",
-    duration: "1-2 weeks",
+    duration: "A few weeks",
     impact: "moderate"
   };
 
@@ -46,197 +43,118 @@ export default function Assessment() {
 
   const isHighRisk = assessment.escalationRequired || assessment.urgency === 'critical';
 
-  const handleConnectSupport = async () => {
+  const handleConnectSupport = async (selectedServiceOverride = null, isUrgentAction = false) => {
     setSubmitting(true);
     setError(null);
+
+    const targetService = selectedServiceOverride || assessment.recommendedService;
 
     try {
       const createdCase = await createCaseApi({
         category: assessment.category,
         secondaryCategory: assessment.secondaryCategory,
-        priority: assessment.urgency,
-        assignedService: assessment.recommendedService,
-        summary: assessment.summary,
+        priority: assessment.urgency || 'moderate',
+        assignedService: targetService,
+        summary: assessment.summary || "Student requested guidance through CareRoute.",
         studentMessage: studentInput.message,
         duration: studentInput.duration,
         impact: studentInput.impact,
-        escalationRequired: isHighRisk
+        escalationRequired: isHighRisk,
+        urgentActionTaken: isUrgentAction
       });
 
-      // Route to confirmation screen with created case details
+      // Navigate to confirmation screen
       navigate('/confirmation', {
         state: {
           caseData: createdCase,
-          assessment
+          assessment,
+          isHighRisk
         }
       });
     } catch (err) {
-      console.error('Failed to create support request:', err);
-      setError('Could not initialize support request. Please try again.');
+      console.error('Failed to connect with support:', err);
+      setError('Could not connect with support at this moment. Please try again or reach out to campus services directly.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <PageHeader
-        title="Triage Assessment Result"
-        subtitle="Based on what you shared, CareRoute has evaluated the most appropriate university support service for your situation."
-        badge={<Badge variant="brand" size="md">Step 2 of 3</Badge>}
-        breadcrumbs={
-          <Link to="/triage" className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Triage Questionnaire
-          </Link>
-        }
-      />
-
-      {/* Visually Distinct Escalation State for High-Risk Cases */}
-      {isHighRisk && (
-        <div className="rounded-2xl border-2 border-rose-500 bg-rose-50/90 p-6 sm:p-8 shadow-elevated animate-in fade-in">
-          <div className="flex items-start gap-4">
-            <div className="p-3.5 rounded-xl bg-rose-600 text-white shrink-0 shadow-sm">
-              <ShieldAlert className="w-8 h-8" />
-            </div>
-            <div className="space-y-3 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-rose-800 bg-rose-200/80 px-2.5 py-1 rounded-full">
-                  High-Risk / Safety Pathway Activated
-                </span>
-                <span className="text-xs text-rose-700 font-medium">
-                  Priority Escalation Protocol
-                </span>
-              </div>
-
-              <h2 className="text-xl sm:text-2xl font-bold text-rose-950">
-                Immediate Human Escalation Recommended
-              </h2>
-
-              <p className="text-sm text-rose-900 leading-relaxed max-w-3xl">
-                Your report indicates signals requiring fast-tracked human support. CareRoute does not attempt to provide counselling or emergency intervention directly. We have flagged your request for priority human staff response.
-              </p>
-
-              {/* Emergency / Crisis Placeholders */}
-              <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-white/90 p-3.5 rounded-xl border border-rose-300 shadow-subtle">
-                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    Emergency Services (Immediate Danger)
-                  </div>
-                  <div className="text-base font-bold text-rose-700 mt-0.5">
-                    {EMERGENCY_PLACEHOLDERS.EMERGENCY_SUPPORT_NUMBER}
-                  </div>
-                  <div className="text-[11px] text-slate-500">Configurable 24/7 National Emergency placeholder</div>
-                </div>
-
-                <div className="bg-white/90 p-3.5 rounded-xl border border-rose-300 shadow-subtle">
-                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    Campus Crisis Line
-                  </div>
-                  <div className="text-base font-bold text-rose-700 mt-0.5">
-                    {EMERGENCY_PLACEHOLDERS.CRISIS_COUNSELLOR_CONTACT}
-                  </div>
-                  <div className="text-[11px] text-slate-500">Configurable on-call crisis duty team placeholder</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Assessment Overview Card */}
-      <Card
-        variant={isHighRisk ? 'crisis' : 'elevated'}
-        padding="spacious"
-      >
-        <div className="space-y-8">
-          {/* Top Metadata Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-4">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Triage Summary
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">
-                Support Service Routing Assessment
-              </h3>
-            </div>
-            <div className="flex items-center gap-3">
-              <PriorityBadge priority={assessment.urgency} size="md" />
-              <Badge variant="blue" size="md">
-                Confidence: {Math.round((assessment.confidence || 0.88) * 100)}%
-              </Badge>
-            </div>
-          </div>
-
-          {/* Assessment Fields Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Primary Concern */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Primary Concern
-              </span>
-              <div className="text-base font-bold text-slate-900">
-                {primaryCategory.name}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {primaryCategory.description}
-              </p>
+  // -------------------------------------------------------------------------
+  // 1. CALM CRISIS / IMMEDIATE SUPPORT VIEW
+  // -------------------------------------------------------------------------
+  if (isHighRisk) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12 space-y-6">
+        {/* Soft, calm card — no alarming red walls or warning banners */}
+        <Card padding="spacious" className="border-slate-200 shadow-card bg-white text-slate-800">
+          <div className="text-center space-y-3 pb-6 border-b border-slate-100">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 mb-1">
+              <HeartHandshake className="h-6 w-6 stroke-[2]" />
             </div>
 
-            {/* Related / Secondary Concern */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Related Concern
-              </span>
-              <div className="text-base font-bold text-slate-800">
-                {secondaryCategory ? secondaryCategory.name : 'No secondary category detected'}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {secondaryCategory ? secondaryCategory.description : 'Primary focus is sufficient for routing.'}
-              </p>
-            </div>
-          </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              You don't have to handle this alone.
+            </h1>
 
-          {/* AI / Triage Short Summary */}
-          <div className="p-4 rounded-xl bg-brand-50/60 border border-brand-100">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-700 block mb-1">
-              Triage Assessment Summary
-            </span>
-            <p className="text-sm text-slate-800 leading-relaxed font-medium">
-              "{assessment.summary}"
+            <p className="text-base text-slate-600 max-w-lg mx-auto leading-relaxed">
+              Based on what you've shared, we'd like to connect you with a person who can support you right now.
             </p>
           </div>
 
-          {/* Recommended Support & Rationale */}
-          <div className="p-5 rounded-xl border-2 border-brand-200 bg-white shadow-sm space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="py-6 space-y-4">
+            {/* Primary Action: Immediate human support */}
+            <div className="p-5 rounded-2xl bg-brand-50/70 border border-brand-100 space-y-2 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-brand-600 block">
-                  Recommended Support Service
-                </span>
-                <h4 className="text-lg font-bold text-slate-900 mt-0.5">
-                  {assessment.recommendedService}
-                </h4>
+                <h2 className="text-base font-bold text-slate-900">
+                  Speak with on-duty support
+                </h2>
+                <p className="text-xs text-slate-600">
+                  Connect immediately with a dedicated university support staff member.
+                </p>
               </div>
-              <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full self-start sm:self-auto">
-                {assessment.routingDetails?.routingSLA || 'Standard Review'}
-              </span>
+              <Button
+                variant="primary"
+                size="md"
+                loading={submitting}
+                onClick={() => handleConnectSupport(null, true)}
+                className="w-full sm:w-auto shrink-0 shadow-sm"
+              >
+                Get immediate support
+              </Button>
             </div>
 
-            <div className="pt-2 border-t border-slate-100 text-xs text-slate-600">
-              <span className="font-semibold text-slate-800">Reason for Recommendation: </span>
-              {assessment.rationale || assessment.routingDetails?.rationale || 'Matched based on identified concern and urgency criteria.'}
+            {/* Secondary Action: Campus Counsellor */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Campus wellbeing & counselling
+                </h2>
+                <p className="text-xs text-slate-600">
+                  Schedule confidential time to talk with a qualified campus counsellor.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="md"
+                loading={submitting}
+                onClick={() => handleConnectSupport("Student Wellbeing & Counselling Service", false)}
+                className="w-full sm:w-auto shrink-0"
+              >
+                Connect with a campus counsellor
+              </Button>
             </div>
-          </div>
 
-          {/* Next Step Banner */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-100/80 border border-slate-200">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
-                Next Step
-              </span>
-              <span className="text-sm font-semibold text-slate-800">
-                Connect with {assessment.recommendedService} to open your support case
-              </span>
+            {/* Request a human callback */}
+            <div className="p-4 rounded-xl border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+              <span>Prefer someone to call or message you?</span>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => handleConnectSupport(null, false)}
+                className="font-semibold text-brand-600 hover:text-brand-800 transition-smooth"
+              >
+                Request a human callback →
+              </button>
             </div>
           </div>
 
@@ -246,23 +164,121 @@ export default function Assessment() {
             </Alert>
           )}
 
-          {/* Action Footer */}
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Link to="/triage" className="w-full sm:w-auto">
-              <Button variant="ghost" size="md" className="w-full sm:w-auto">
-                Edit Concern
-              </Button>
+          {/* Reassuring note with neutral placeholders */}
+          <div className="pt-6 border-t border-slate-100 text-center space-y-2">
+            <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+              If you are in immediate danger, please contact your local emergency service or someone you trust who can stay with you.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 text-[11px] text-slate-400">
+              <span>{EMERGENCY_PLACEHOLDERS.EMERGENCY_SUPPORT_NAME}</span>
+              <span>•</span>
+              <span>{EMERGENCY_PLACEHOLDERS.CRISIS_COUNSELLOR_NAME}</span>
+              <span>•</span>
+              <span>{EMERGENCY_PLACEHOLDERS.CAMPUS_SECURITY_NAME}</span>
+            </div>
+          </div>
+        </Card>
+
+        <div className="text-center">
+          <Link
+            to="/triage"
+            className="text-xs text-slate-400 hover:text-slate-600 transition-smooth inline-flex items-center gap-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to edit your message
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. NORMAL ASSESSMENT VIEW
+  // -------------------------------------------------------------------------
+  const naturalRationale = assessment.rationale ||
+    `Your responses suggest that ${primaryCategory.name.toLowerCase()} is affecting your day-to-day routine. Connecting directly with ${assessment.recommendedService} will help you access the right advice.`;
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-12 space-y-6">
+      {/* Friendly Header */}
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Here's what we think could help
+        </h1>
+        <p className="text-sm sm:text-base text-slate-600 max-w-md mx-auto">
+          We've matched your concern with the campus team best suited to assist you.
+        </p>
+      </div>
+
+      {/* Main Support Recommendation Card */}
+      <Card padding="spacious" className="shadow-card border-slate-200/80">
+        <div className="space-y-6">
+          {/* Primary & Related Concern */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                Primary Concern
+              </span>
+              <div className="text-base font-bold text-slate-900">
+                {primaryCategory.name}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                Related Concern
+              </span>
+              <div className="text-base font-medium text-slate-800">
+                {secondaryCategory ? secondaryCategory.name : 'None indicated'}
+              </div>
+            </div>
+          </div>
+
+          {/* Recommended Support Service */}
+          <div className="p-5 rounded-2xl bg-brand-50/60 border border-brand-100 space-y-2">
+            <span className="text-xs font-bold text-brand-700 uppercase tracking-wider block">
+              Recommended Support
+            </span>
+            <div className="text-xl font-bold text-slate-900">
+              {assessment.recommendedService}
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed pt-1">
+              {primaryCategory.description}
+            </p>
+          </div>
+
+          {/* Why Section */}
+          <div className="space-y-1.5 px-1">
+            <span className="text-xs font-bold text-slate-700 block">
+              Why this service:
+            </span>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {naturalRationale}
+            </p>
+          </div>
+
+          {error && (
+            <Alert variant="danger">
+              {error}
+            </Alert>
+          )}
+
+          {/* Next Action Button */}
+          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <Link to="/triage" className="order-2 sm:order-1">
+              <span className="text-xs text-slate-400 hover:text-slate-600 font-medium inline-flex items-center gap-1">
+                <ArrowLeft className="w-3.5 h-3.5" /> Back
+              </span>
             </Link>
 
             <Button
               size="lg"
-              variant={isHighRisk ? 'crisis' : 'primary'}
+              variant="primary"
               loading={submitting}
-              onClick={handleConnectSupport}
+              onClick={() => handleConnectSupport()}
               rightIcon={<ArrowRight className="w-4 h-4" />}
-              className="w-full sm:w-auto shadow-elevated"
+              className="w-full sm:w-auto shadow-sm px-8 order-1 sm:order-2"
             >
-              {isHighRisk ? 'Connect Me to Urgent Support' : 'Connect Me to Support'}
+              Connect me to support →
             </Button>
           </div>
         </div>

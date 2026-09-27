@@ -55,21 +55,21 @@ export default function App() {
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-2">Student Navigation</h4>
+                <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-2">Student Support</h4>
                 <ul className="space-y-1.5 text-slate-500">
-                  <li><Link to="/triage" className="hover:text-brand-600">Get Support / Triage</Link></li>
-                  <li><Link to="/status" className="hover:text-brand-600">Check Case Status</Link></li>
-                  <li><Link to="/triage?scenario=high-risk-crisis" className="hover:text-brand-600 text-rose-600 font-medium">Crisis Protocol Pathway</Link></li>
+                  <li><Link to="/triage" className="hover:text-brand-600">Get Support</Link></li>
+                  <li><Link to="/status" className="hover:text-brand-600">My Request</Link></li>
+                  <li><Link to="/triage?demo=true" className="hover:text-brand-600 text-slate-400">Demo Mode (?demo=true)</Link></li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-2">Campus Administration</h4>
+                <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-2">Staff Portal</h4>
                 <ul className="space-y-1.5 text-slate-500">
                   <li><Link to="/staff" className="hover:text-brand-600">Staff Case Queues</Link></li>
-                  <li><Link to="/analytics" className="hover:text-brand-600">Impact & Operations Analytics</Link></li>
-                  <li className="pt-2 text-slate-400">
-                    Emergency: <span className="font-semibold text-slate-700">{EMERGENCY_PLACEHOLDERS.EMERGENCY_SUPPORT_NUMBER}</span>
+                  <li><Link to="/analytics" className="hover:text-brand-600">Operations & Analytics</Link></li>
+                  <li className="pt-2 text-[11px] text-slate-400">
+                    Emergency: {EMERGENCY_PLACEHOLDERS.EMERGENCY_SUPPORT_NAME}
                   </li>
                 </ul>
               </div>
