@@ -1,0 +1,26 @@
+{
+  "name": "care-route",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CareRoute - Student Triage & Routing Platform for University Support Services",
+  "scripts": {
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "start": "npm --prefix backend start",
+    "build": "npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "student-support",
+    "triage",
+    "routing",
+    "hackathon",
+    "careroute"
+  ],
+  "author": "CareRoute Team",
+  "license": "MIT"
+}
